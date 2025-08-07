@@ -121,7 +121,7 @@ torch==2.6.0+cu118
 torchmetrics==1.6.1
 torchvision==0.21.0+cu118
 tqdm @ file:///home/conda/feedstock_root/build_artifacts/tqdm_1735661334605/work
-transformers==4.49.0
+transformers==4.53.0
 triton==3.2.0
 ttach==0.0.3
 typing_extensions @ file:///home/conda/feedstock_root/build_artifacts/typing_extensions_1733188668063/work
