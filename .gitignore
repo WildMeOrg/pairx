@@ -1,12 +1,27 @@
 examples/output/*.png
 
-#python
-*.egg-info/
+## python
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[codz]
+*$py.class
 
-# ide
+# C extensions
+*.so
+
+# Distribution / packaging
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+## ide / dev
 .idea/
 .vscode/
+.venv
 
-# ds
+## ds
 .DS_Store
 Thumbs.db
