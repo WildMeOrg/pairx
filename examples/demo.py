@@ -10,6 +10,7 @@ from pairx.core import explain
 torch.cuda.empty_cache()
 
 def main():
+    # note that this may not work on some mac procs, throwing "AttributeError: module 'torch.mps' has no attribute 'current_device'" ... if so, skip it for demo.
     torch.cuda.reset_peak_memory_stats()
     start_time = datetime.now()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -24,7 +25,7 @@ def main():
     imgs_np_0 = []
     imgs_np_1 = []
 
-    data_paths = [("cow_0_0.jpg", "cow_0_1.jpg"), ("smores_shoes.jpg", "smores_sink.jpg"), ("bowie_airport.jpg", "bowie_blanket.jpg"), ("bowie_bow.jpg", "bowie_prairie_dog.jpg")]
+    data_paths = [("cow_0_0.jpg", "cow_0_1.jpg")]
     for data_0, data_1 in data_paths:
         img_0, img_1, img_np_0, img_np_1 = get_img_pair_from_paths(device, f"data/{data_0}", f"data/{data_1}", img_size, img_transforms)
         imgs_0.append(img_0)
@@ -50,7 +51,7 @@ def main():
 
     for i, pairx_img in enumerate(pairx_imgs):
         pairx_img = Image.fromarray(pairx_img)
-        pairx_img.save(f"examples/cow_pairx_example_{i}.png")
+        pairx_img.save(f"output/cow_pairx_example_{i}.png")
 
     peak_memory = torch.cuda.max_memory_allocated()  # in bytes
     print(f"Peak memory allocated: {peak_memory / (1024 ** 3):.2f} GiB")
