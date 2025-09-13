@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pairx"
-dynamic = ["version"]
+version = "0.1.0"
 description = " Pairwise mAtching of Intermediate Representations for eXplainability (PAIR-X)."
 readme = "README.md"
 requires-python = ">=3.10"

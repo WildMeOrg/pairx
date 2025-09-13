@@ -1,0 +1,5 @@
+include README.md
+include LICENSE
+recursive-include src/pairx *.py
+recursive-include * __pycache__
+recursive-include * *.py[co]
