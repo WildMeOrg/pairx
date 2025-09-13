@@ -1,9 +1,9 @@
 import torch
 from PIL import Image
 
-from src.pairx.dataset import XAIDataset
-from src.pairx.loaders import toy_df, wildme_multispecies_miewid
-from src.pairx.core import explain
+from pairx.dataset import XAIDataset
+from pairx.loaders import toy_df, wildme_multispecies_miewid
+from pairx.core import explain
 
 def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -27,7 +27,7 @@ def main():
                   )[0]
     
     pairx_img = Image.fromarray(pairx_img)
-    pairx_img.save("examples/cow_pairx_example.png")
+    pairx_img.save("output/cow_pairx_example.png")
 
 if __name__ == "__main__":
     main()
