@@ -1,23 +1,20 @@
-import os
 import torch
-import time
 import numpy as np
-import matplotlib.pyplot as plt
 import cv2
 import torch.nn.functional as F
 from zennit.composites import EpsilonPlus
-from .xai_canonizers.efficientnet import EfficientNetBNCanonizer
-import torchvision.transforms as transforms
 from zennit.torchvision import ResNetCanonizer
-#from custom_canonizers import ResNetCanonizerTimm
 import timm
 import torchvision
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
-#from LightGlue.lightglue import LightGlue, SuperPoint
-#from LightGlue.lightglue.utils import rbd
-import pickle
+import sys
+import os
 
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
+from xai_canonizers.efficientnet import EfficientNetBNCanonizer
+from xai_canonizers.resnet_timm import ResNetCanonizerTimm
 
 COLORS = ['Grey', 'Purple', 'Blue', 'Green', 'Orange', 'Red']
 CMAPS = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds']
@@ -47,7 +44,7 @@ def get_intermediate_feature_maps_and_embedding(img, model, layer_keys):
 
 def get_feature_matches(feature_map_0, feature_map_1, img_0, img_1):
     def flatten_to_descriptors(feature_map):
-        descriptors = feature_map.squeeze().flatten(start_dim=1).transpose(0,1)
+        descriptors = feature_map.flatten(start_dim=1).transpose(0,1)
         return descriptors.detach().cpu().numpy()
 
     def get_keypoints(feature_map, img):
@@ -84,7 +81,6 @@ def get_feature_matches(feature_map_0, feature_map_1, img_0, img_1):
 def choose_canonizer(model):
     if type(model) is torchvision.models.resnet.ResNet:
         canonizer = ResNetCanonizer()
-        #canonizer = EfficientNetBNCanonizer()
     elif (type(model) is timm.models.efficientnet.EfficientNet
           or (hasattr(model, 'backbone')
               and type(model.backbone) is timm.models.efficientnet.EfficientNet)):
@@ -106,7 +102,7 @@ def get_intermediate_relevances(img, gradient, model, layer_keys):
         intermediate_relevances = {}
         def save_grad(name):
             def hook(module, grad_in, grad_out):
-                intermediate_relevances[name] = grad_out[0].squeeze().sum(dim=0).abs().detach().cpu().numpy()
+                intermediate_relevances[name] = grad_out[0].abs().sum(dim=1).detach().cpu().numpy()
 
             return hook
 
@@ -124,25 +120,7 @@ def get_intermediate_relevances(img, gradient, model, layer_keys):
         
     return intermediate_relevances
 
-def get_pixel_relevance(device, img, coord, model, layer_key):
-    composite = EpsilonPlus(canonizers=[choose_canonizer(model)])
-    
-    img.requires_grad = True
-    img.grad = None
-
-    with composite.context(model) as modified_model:
-        # TODO - does this have to have both a forward *and* backward pass every time?
-        intermediate_fms, _ = get_intermediate_feature_maps_and_embedding(img, modified_model, [layer_key])
-        intermediate_fm = intermediate_fms[layer_key]
-
-        gradient = torch.zeros(intermediate_fm.shape)
-        gradient[:, :, coord[1], coord[0]] = intermediate_fm[:, :, coord[1], coord[0]]
-
-        intermediate_fm.backward(gradient=gradient.to(device))
-
-    return img.grad.squeeze().sum(dim=0).abs().detach().cpu().numpy()
-
-def get_pixel_relevances(device, img, coords, model, layer_key):
+def get_pixel_relevances(device, img, coord_lists, model, layer_key):
     composite = EpsilonPlus(canonizers=[choose_canonizer(model)])
     
     img.requires_grad = True
@@ -151,20 +129,19 @@ def get_pixel_relevances(device, img, coords, model, layer_key):
     grads = []
 
     with composite.context(model) as modified_model:
-        # TODO - does this have to have both a forward *and* backward pass every time?
         intermediate_fms, _ = get_intermediate_feature_maps_and_embedding(img, modified_model, [layer_key])
         intermediate_fm = intermediate_fms[layer_key]
 
-        for coord in coords:
-            gradient = torch.zeros(intermediate_fm.shape)
-            gradient[:, :, coord[1], coord[0]] = intermediate_fm[:, :, coord[1], coord[0]]
+        for coords in zip(*coord_lists):
+            gradient = torch.zeros(intermediate_fm.shape).to(device)
+            for i, coord in enumerate(coords):
+                gradient[i, :, coord[1], coord[0]] = intermediate_fm[i, :, coord[1], coord[0]]
 
             intermediate_fm.backward(gradient=gradient.to(device), retain_graph=True)
 
-            grads.append(img.grad.squeeze().sum(dim=0).abs().detach().cpu().numpy())
+            grads.append(img.grad.sum(dim=1).abs().detach().cpu().numpy())
             img.grad=None
 
-    #return img.grad.squeeze().sum(dim=0).abs().detach().cpu().numpy()
     return grads
 
 def display_image_with_heatmap(img, heatmap, min = None, max = None):
@@ -226,9 +203,7 @@ def draw_color_maps(value_set_0, value_set_1, img_shape):
 
 def draw_matches_and_color_maps(img_np_0, img_np_1, matches,
                                 intermediate_relevance_0, intermediate_relevance_1,
-                                pixel_relevances_0, pixel_relevances_1):
-    #img_np_0 = to_displayable_np(img_0)
-    #img_np_1 = to_displayable_np(img_1)
+                                pixel_relevances_0, pixel_relevances_1, background_opacity=0.2):
 
     img_hm_0 = display_image_with_heatmap(img_np_0, intermediate_relevance_0)
     img_hm_1 = display_image_with_heatmap(img_np_1, intermediate_relevance_1)
@@ -236,78 +211,106 @@ def draw_matches_and_color_maps(img_np_0, img_np_1, matches,
     matches_img = draw_matches(img_hm_0, img_hm_1, matches)
     color_map_img = draw_color_maps(pixel_relevances_0, pixel_relevances_1, matches_img.shape)
 
+    if background_opacity > 0:
+        raw_img = cv2.hconcat((img_np_0, img_np_1))
+        color_map_img = 255 - ((255 - color_map_img) + (255 - raw_img) * background_opacity)
+        color_map_img = np.clip(color_map_img, 0, 255).astype(np.uint8)
+
     return cv2.vconcat((matches_img, color_map_img))
 
-def calculate_residuals(H, src_pts, dst_pts):
-    src_pts = src_pts.reshape(-1, 2)
-    dst_pts = dst_pts.reshape(-1, 2)
-    
-    src_pts_h = np.hstack([src_pts, np.ones((src_pts.shape[0], 1))])
-    projected_pts_h = np.dot(H, src_pts_h.T).T
-    projected_pts = projected_pts_h[:, :2] / projected_pts_h[:, 2, np.newaxis]
-    
-    residuals = np.linalg.norm(projected_pts - dst_pts, axis=1)
-
-    return np.mean(residuals)
-
-def pairx(device, img_0, img_1, model, layer_keys, k_lines, k_colors):
-    feature_maps_0, emb_0 = get_intermediate_feature_maps_and_embedding(img_0, model, layer_keys)
-    feature_maps_1, emb_1 = get_intermediate_feature_maps_and_embedding(img_1, model, layer_keys)
+def pairx(device, imgs_0, imgs_1, model, layer_keys, k_lines, k_colors):
+    feature_maps_0, emb_0 = get_intermediate_feature_maps_and_embedding(imgs_0, model, layer_keys)
+    feature_maps_1, emb_1 = get_intermediate_feature_maps_and_embedding(imgs_1, model, layer_keys)
     
     # backpropagate cosine similarity back to the intermediate layers
     emb_0.retain_grad()
     emb_1.retain_grad()
     
     cosine_sim = F.cosine_similarity(emb_0, emb_1, dim=1)
-    cosine_sim.backward()
+    cosine_sim.backward(gradient=cosine_sim)
 
-    intermediate_relevances_0 = get_intermediate_relevances(img_0, emb_0.grad, model, layer_keys)
-    intermediate_relevances_1 = get_intermediate_relevances(img_1, emb_1.grad, model, layer_keys)
+    intermediate_relevances_0 = get_intermediate_relevances(imgs_0, emb_0.grad, model, layer_keys)
+    intermediate_relevances_1 = get_intermediate_relevances(imgs_1, emb_1.grad, model, layer_keys)
 
     results = {}
     for layer_key in layer_keys:
         feature_map_0 = feature_maps_0[layer_key]
         feature_map_1 = feature_maps_1[layer_key]
+
         intermediate_relevance_0 = intermediate_relevances_0[layer_key]
         intermediate_relevance_1 = intermediate_relevances_1[layer_key]
-        
-        # get a set of feature matches
-        matches = get_feature_matches(feature_map_0, feature_map_1, img_0, img_1)
 
-        # go through matches and record each match's calculated relevance
-        for match in matches:
-            i0, j0 = match['coord0']
-            i1, j1 = match['coord1']
-            match['relevance'] = intermediate_relevance_0[j0][i0] * intermediate_relevance_1[j1][i1]
+        coord_lists_0 = []
+        coord_lists_1 = []
+        all_matches = []
+        for fm_0, fm_1, ir_0, ir_1 in zip(feature_map_0, feature_map_1, intermediate_relevance_0,
+                                          intermediate_relevance_1):
+            matches = get_feature_matches(fm_0, fm_1, imgs_0, imgs_1)
 
-        matches.sort(key = lambda x: -x['relevance'])
+            # go through matches and record each match's calculated relevance
+            for match in matches:
+                i0, j0 = match['coord0']
+                i1, j1 = match['coord1']
+                match['relevance'] = ir_0[j0][i0] * ir_1[j1][i1]
+
+            matches.sort(key=lambda x: -x['relevance'])
+            coord_lists_0.append([match['coord0'] for match in matches[:k_colors]])
+            coord_lists_1.append([match['coord1'] for match in matches[:k_colors]])
+
+            all_matches.append(matches[:k_lines])
 
         # for each selected feature match, backpropagate to the original image
-        pixel_relevances_0 = get_pixel_relevances(device, img_0, [match['coord0'] for match in matches[:k_colors]], model, layer_key)
-        pixel_relevances_1 = get_pixel_relevances(device, img_1, [match['coord1'] for match in matches[:k_colors]], model, layer_key)
+        pixel_relevances_0 = get_pixel_relevances(device, imgs_0, coord_lists_0, model, layer_key)
+        pixel_relevances_1 = get_pixel_relevances(device, imgs_1, coord_lists_1, model, layer_key)
 
         results[layer_key] = {'intermediate_relevances': (intermediate_relevance_0, intermediate_relevance_1),
-                              'matches': matches[:k_lines],
+                              'matches': all_matches,
                               'pixel_relevances': (pixel_relevances_0, pixel_relevances_1)}
         
     return results
 
-def explain(img_0, img_1, img_np_0, img_np_1, model, layer_keys, k_lines=10, k_colors=10):
+def explain(imgs_0, imgs_1, imgs_np_0, imgs_np_1, model, layer_keys, k_lines=20, k_colors=10, background_opacity=0.2):
+    """
+    Generates a PAIR-X explanation for the provided images and model.
+    Args:
+        img_0 (torch.Tensor): The first input image, with any transforms applied.
+        img_1 (torch.Tensor): The second input image, with any transforms applied.
+        img_np_0 (numpy.ndarray): The first image, resized but not otherwise transformed, as a NumPy array.
+        img_np_1 (numpy.ndarray): The second image, resized but not otherwise transformed, as a NumPy array.
+        model (torch.nn.Module or equivalent): The deep metric learning model.
+        layer_keys (list of str): The keys of the intermediate layers to be used.
+        k_lines (int, optional): The number of matches to visualize as lines. Defaults to 20.
+        k_colors (int, optional): The number of matches to backpropagate to original image pixels. Defaults to 10.
+    Returns:
+        list of numpy.ndarray: If `len(layer_keys) > 1`, returns a list of PAIR-X visualizations as NumPy arrays.
+        numpy.ndarray: If `len(layer_keys) == 1`, returns a single PAIR-X visualization as a NumPy array.
+    """
     device = model.device
     # get pairx results
-    pairx_results = pairx(device, img_0, img_1, model, layer_keys, k_lines, k_colors)
+    pairx_results = pairx(device, imgs_0, imgs_1, model, layer_keys, k_lines, k_colors)
 
     # visualize the results into images
-    output_images = []
-    for layer_key in layer_keys:
-        matches = pairx_results[layer_key]["matches"]
-        intermediate_relevance_0, intermediate_relevance_1 = pairx_results[layer_key]["intermediate_relevances"]
-        pixel_relevances_0, pixel_relevances_1 = pairx_results[layer_key]["pixel_relevances"]
+    all_output_images = []
+    for i, (img_np_0, img_np_1) in enumerate(zip(imgs_np_0, imgs_np_1)):
+        output_images = []
+        for layer_key in layer_keys:
+            matches = pairx_results[layer_key]["matches"][i]
+            intermediate_relevance_0, intermediate_relevance_1 = [ir[i] for ir in
+                                                                  pairx_results[layer_key]["intermediate_relevances"]]
+            pixel_relevances_0, pixel_relevances_1 = pairx_results[layer_key]["pixel_relevances"]
+            pixel_relevances_0 = [pr[i] for pr in pixel_relevances_0]
+            pixel_relevances_1 = [pr[i] for pr in pixel_relevances_1]
 
-        output_images.append(draw_matches_and_color_maps(img_np_0, img_np_1, matches[:k_lines],
-                                    intermediate_relevance_0, intermediate_relevance_1,
-                                    pixel_relevances_0, pixel_relevances_1))
+            output_images.append(draw_matches_and_color_maps(img_np_0, img_np_1, matches[:k_lines],
+                                                             intermediate_relevance_0, intermediate_relevance_1,
+                                                             pixel_relevances_0, pixel_relevances_1,
+                                                             background_opacity=background_opacity))
 
-    return output_images
+        all_output_images.append(output_images)
+
+    if len(layer_keys) == 1:
+        return [output_images[0] for output_images in all_output_images]
+
+    return all_output_images
 
     
