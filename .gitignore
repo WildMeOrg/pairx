@@ -1,0 +1,10 @@
+#python
+*.egg-info/
+
+# ide
+.idea/
+.vscode/
+
+# ds
+.DS_Store
+Thumbs.db
