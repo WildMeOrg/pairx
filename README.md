@@ -1,20 +1,36 @@
 # PAIR-X
 Demo code for Pairwise mAtching of Intermediate Representations for eXplainability (PAIR-X).
 
+## Citation
+PAIR-X was developed by Lauren Shrack in the [BeeryLab at MIT](https://beerylab.csail.mit.edu/). 
+
+```
+@misc{shrack2025pairwisematchingintermediaterepresentations,
+      title={Pairwise Matching of Intermediate Representations for Fine-grained Explainability}, 
+      author={Lauren Shrack and Timm Haucke and Antoine Salaün and Arjun Subramonian and Sara Beery},
+      year={2025},
+      eprint={2503.22881},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2503.22881}, 
+}
+```
+[The original repository is here](https://github.com/pairx-explains/pairx).
+
 ## To run the demo
 
 1. Clone the repository
 
        git clone https://github.com/pairx-explains/pairx.git
        cd pairx
-2. Set up the conda environment
+2. Build a local install
 
-       conda env create -f environment.yml
-       conda activate pairx
+       pip install -e .
 3. Run the example
 
+       cd examples 
        python demo.py
-4. View the PAIR-X output in the `examples` directory.
+4. View the PAIR-X output in the `output` directory.
 
 ## Quickstart: Running on new datasets and models
 
