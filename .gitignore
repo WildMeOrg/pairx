@@ -1,3 +1,5 @@
+examples/output/*.png
+
 #python
 *.egg-info/
 
