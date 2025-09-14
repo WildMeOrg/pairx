@@ -12,7 +12,7 @@ torch.cuda.empty_cache()
 def main():
     # note that torch.cuda.reset_peak_memory_stats() may not work on some Mac procs:
     #       throwing "AttributeError: module 'torch.mps' has no attribute 'current_device'" ... if so, skip it for demo.
-    torch.cuda.reset_peak_memory_stats()
+    # torch.cuda.reset_peak_memory_stats()
     start_time = datetime.now()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

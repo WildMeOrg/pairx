@@ -21,6 +21,7 @@ MANIFEST
 .idea/
 .vscode/
 .venv
+.python-version
 
 ## ds
 .DS_Store

@@ -4,14 +4,6 @@ type: software
 authors:
   - family-names: "Shrack"
     given-names: "Lauren"
-  - family-names: "Haucke"
-    given-names: "Timm"
-  - family-names: "Salaün"
-    given-names: "Antoine"
-  - family-names: "Subramonian"
-    given-names: "Arjun"
-  - family-names: "Beery"
-    given-names: "Sara"
 title: "PAIR-X: Pairwise mAtching of Intermediate Representations for eXplainability"
 version: "0.1.0"
 doi: 10.48550/arXiv.2503.22881

@@ -4,6 +4,7 @@ Demo code for Pairwise mAtching of Intermediate Representations for eXplainabili
 ## Citation
 PAIR-X was developed by Lauren Shrack in the [BeeryLab at MIT](https://beerylab.csail.mit.edu/). 
 
+If you use this software, please cite it as described in [CITATION.cff](CITATION.cff)  
 ```
 @misc{shrack2025pairwisematchingintermediaterepresentations,
       title={Pairwise Matching of Intermediate Representations for Fine-grained Explainability}, 
@@ -18,12 +19,13 @@ PAIR-X was developed by Lauren Shrack in the [BeeryLab at MIT](https://beerylab.
 [The original repository is here](https://github.com/pairx-explains/pairx).
 
 ## To run the demo
+(Supported Python versions:  3.10, 3.11, 3.12.  Others may work.) 
 
 1. Clone this repository
 
        git clone https://github.com/WildMeOrg/pairx.git
        cd pairx
-2. Create a virtual environment (python 3.10 is currently recommended), and install pairx
+2. Create a virtual environment and install pairx
         
        python -m venv .venv
        # or with uv, whichever is your preference ... 
@@ -32,7 +34,7 @@ PAIR-X was developed by Lauren Shrack in the [BeeryLab at MIT](https://beerylab.
 3. Run the example
 
        cd examples 
-       python demo.py
+       python miewid_demo.py
 4. View the PAIR-X output in the `output` directory.
 
 ## Quickstart: Running on new datasets and models
