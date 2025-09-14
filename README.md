@@ -43,7 +43,7 @@ Clone the repository as described above. Then include the needed imports:
 
        import torch
 
-       from pairx.core import explain
+       from pairx import explain
        from pairx.dataset import get_img_pair_from_paths
        from pairx.loaders import wildme_multispecies_miewid
 
