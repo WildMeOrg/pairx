@@ -19,12 +19,15 @@ PAIR-X was developed by Lauren Shrack in the [BeeryLab at MIT](https://beerylab.
 
 ## To run the demo
 
-1. Clone the repository
+1. Clone this repository
 
-       git clone https://github.com/pairx-explains/pairx.git
+       git clone https://github.com/WildMeOrg/pairx.git
        cd pairx
-2. Build a local install
-
+2. Create a virtual environment (python 3.10 is currently recommended), and install pairx
+        
+       python -m venv .venv
+       # or with uv, whichever is your preference ... 
+       source .venv/bin/activate
        pip install -e .
 3. Run the example
 
@@ -39,12 +42,10 @@ PAIR-X was developed by Lauren Shrack in the [BeeryLab at MIT](https://beerylab.
 Clone the repository as described above. Then include the needed imports:
 
        import torch
-       import os
-       from PIL import Image
-       
-       from xai_dataset import XAIDataset, get_img_pair_from_paths
-       from example_loaders import toy_df, wildme_multispecies_miewid
-       from core import explain
+
+       from pairx.core import explain
+       from pairx.dataset import get_img_pair_from_paths
+       from pairx.loaders import wildme_multispecies_miewid
 
        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -63,9 +64,13 @@ Otherwise, you should supply each variable for your own model:
 
 If you want to run ad hoc on a pair of images, you can simply use:
 
-       img_path_0 = <PATH/TO/IMG_0>
-       img_path_1 = <PATH/TO/IMG_1>
-       img_0, img_1, img_np_0, img_np_1 = get_img_pair_from_paths(device, img_path_0, img_path_1, img_size, img_transforms)
+       img_paths = ["examples/data/cow_0_0.jpg", "examples/data/cow_0_1.jpg"]
+       img_0, img_1, img_np_0, img_np_1 = get_img_pair_from_paths(device,
+                                                                  f"{img_paths[0]}",
+                                                                  f"{img_paths[1]}",
+                                                                  img_size,
+                                                                  img_transforms
+                                                                  )
 
 This loads the images with and without transforms applied, so that the untransformed images can be used for visualizations.
 
