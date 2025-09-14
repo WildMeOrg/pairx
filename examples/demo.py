@@ -10,7 +10,8 @@ from pairx.core import explain
 torch.cuda.empty_cache()
 
 def main():
-    # note that this may not work on some mac procs, throwing "AttributeError: module 'torch.mps' has no attribute 'current_device'" ... if so, skip it for demo.
+    # note that torch.cuda.reset_peak_memory_stats() may not work on some Mac procs:
+    #       throwing "AttributeError: module 'torch.mps' has no attribute 'current_device'" ... if so, skip it for demo.
     torch.cuda.reset_peak_memory_stats()
     start_time = datetime.now()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -45,7 +46,7 @@ def main():
                         k_lines=20,             # number of matches to visualize as lines
                         k_colors=10,            # number of matches to visualize as colors
                         )
-    
+
     #raw_img = cv2.hconcat((img_np_0, img_np_1))
     #pairx_img = cv2.vconcat((raw_img, pairx_img))
 
