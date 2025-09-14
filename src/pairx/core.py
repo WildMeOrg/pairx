@@ -13,8 +13,8 @@ import os
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-from xai_canonizers.efficientnet import EfficientNetBNCanonizer
-from xai_canonizers.resnet_timm import ResNetCanonizerTimm
+from canonizers.efficientnet import EfficientNetBNCanonizer
+from canonizers.resnet_timm import ResNetCanonizerTimm
 
 COLORS = ['Grey', 'Purple', 'Blue', 'Green', 'Orange', 'Red']
 CMAPS = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds']
@@ -25,19 +25,19 @@ def get_intermediate_feature_maps_and_embedding(img, model, layer_keys):
     def get_intermediate_hook(name):
         def intermediate_hook(module, input, output):
             intermediate_fms[name] = output
-            
+
         return intermediate_hook
 
     handles = []
     for layer_key in layer_keys:
         submodule = model.get_submodule(layer_key)
         assert submodule, f'could not find layer with key {layer_key}'
-        
+
         handles.append(submodule.register_forward_hook(get_intermediate_hook(layer_key)))
-        
+
     embedding = model(img)
-    
-    for handle in handles:    
+
+    for handle in handles:
         handle.remove()
 
     return intermediate_fms, embedding
@@ -52,7 +52,7 @@ def get_feature_matches(feature_map_0, feature_map_1, img_0, img_1):
         img_h, img_w = img.shape[-2:]
         step_w = float(img_w) / float(w)
         step_h = float(img_h) / float(h)
-    
+
         keypoints = [cv2.KeyPoint(x = step_w*(i+0.5),
                                   y = step_h*(j+0.5),
                                   size=1) for j in range(h) for i in range(w)]
@@ -111,18 +111,18 @@ def get_intermediate_relevances(img, gradient, model, layer_keys):
             submodule = model.get_submodule(layer_key)
             assert submodule, f'could not find layer with key {layer_key}'
             handles.append(submodule.register_full_backward_hook(save_grad(layer_key)))
-        
+
         output = modified_model(img)
         output.backward(gradient=gradient)
 
         for handle in handles:
             handle.remove()
-        
+
     return intermediate_relevances
 
 def get_pixel_relevances(device, img, coord_lists, model, layer_key):
     composite = EpsilonPlus(canonizers=[choose_canonizer(model)])
-    
+
     img.requires_grad = True
     img.grad = None
 
@@ -161,14 +161,14 @@ def display_image_with_heatmap(img, heatmap, min = None, max = None):
 def draw_matches(img_0, img_1, matches):
     output_img = cv2.hconcat((img_0, img_1))
     left_width = img_0.shape[1]
-    
+
     for i, match in enumerate(matches):
         kp_0 = match['keypoint0'].pt
         kp_1 = match['keypoint1'].pt
-        
+
         coord_0 = [int(kp_0[0]), int(kp_0[1])]
         coord_1 = [int(kp_1[0]) + left_width, int(kp_1[1])]
-        
+
         color = tuple(int(c * 255) for c in mcolors.to_rgb(COLORS[i % len(COLORS)]))
 
         cv2.line(output_img, coord_0, coord_1, color, 1)
@@ -188,7 +188,7 @@ def draw_color_maps(value_set_0, value_set_1, img_shape):
     output_img = np.zeros(img_shape)
     if len(value_set_0) == 0:
         return output_img.astype(np.uint8)
-    
+
     scale_factor = .8
     gamma = .95
 
@@ -221,11 +221,11 @@ def draw_matches_and_color_maps(img_np_0, img_np_1, matches,
 def pairx(device, imgs_0, imgs_1, model, layer_keys, k_lines, k_colors):
     feature_maps_0, emb_0 = get_intermediate_feature_maps_and_embedding(imgs_0, model, layer_keys)
     feature_maps_1, emb_1 = get_intermediate_feature_maps_and_embedding(imgs_1, model, layer_keys)
-    
+
     # backpropagate cosine similarity back to the intermediate layers
     emb_0.retain_grad()
     emb_1.retain_grad()
-    
+
     cosine_sim = F.cosine_similarity(emb_0, emb_1, dim=1)
     cosine_sim.backward(gradient=cosine_sim)
 
@@ -266,7 +266,7 @@ def pairx(device, imgs_0, imgs_1, model, layer_keys, k_lines, k_colors):
         results[layer_key] = {'intermediate_relevances': (intermediate_relevance_0, intermediate_relevance_1),
                               'matches': all_matches,
                               'pixel_relevances': (pixel_relevances_0, pixel_relevances_1)}
-        
+
     return results
 
 def explain(imgs_0, imgs_1, imgs_np_0, imgs_np_1, model, layer_keys, k_lines=20, k_colors=10, background_opacity=0.2):
@@ -313,4 +313,4 @@ def explain(imgs_0, imgs_1, imgs_np_0, imgs_np_1, model, layer_keys, k_lines=20,
 
     return all_output_images
 
-    
+
