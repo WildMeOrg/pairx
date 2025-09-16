@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: "Shrack"
+    given-names: "Lauren"
+title: "PAIR-X: Pairwise mAtching of Intermediate Representations for eXplainability"
+version: "0.1.0"
+doi: 10.48550/arXiv.2503.22881
+date-released: 2025-01-15
+license: MIT
+abstract: "PAIR-X provides pairwise matching of intermediate representations for fine-grained explainability in deep metric learning models."
+keywords:
+  - explainable-ai
+  - computer-vision
+  - deep-learning
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Shrack"
+      given-names: "Lauren"
+    - family-names: "Haucke"
+      given-names: "Timm"
+    - family-names: "Salaün"
+      given-names: "Antoine"
+    - family-names: "Subramonian"
+      given-names: "Arjun"
+    - family-names: "Beery"
+      given-names: "Sara"
+  doi: "10.48550/arXiv.2503.22881"
+  journal: "arXiv preprint"
+  title: "Pairwise Matching of Intermediate Representations for Fine-grained Explainability"
+  year: 2025
+  url: "https://arxiv.org/abs/2503.22881"

@@ -1,0 +1,28 @@
+examples/output/*.png
+
+## python
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[codz]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+## ide / dev
+.idea/
+.vscode/
+.venv
+.python-version
+
+## ds
+.DS_Store
+Thumbs.db

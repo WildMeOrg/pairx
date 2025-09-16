@@ -1,20 +1,41 @@
 # PAIR-X
 Demo code for Pairwise mAtching of Intermediate Representations for eXplainability (PAIR-X).
 
+## Citation
+PAIR-X was developed by Lauren Shrack in the [BeeryLab at MIT](https://beerylab.csail.mit.edu/). 
+
+If you use this software, please cite it as described in [CITATION.cff](CITATION.cff)  
+```
+@misc{shrack2025pairwisematchingintermediaterepresentations,
+      title={Pairwise Matching of Intermediate Representations for Fine-grained Explainability}, 
+      author={Lauren Shrack and Timm Haucke and Antoine Salaün and Arjun Subramonian and Sara Beery},
+      year={2025},
+      eprint={2503.22881},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2503.22881}, 
+}
+```
+[The original repository is here](https://github.com/pairx-explains/pairx).
+
 ## To run the demo
+(Supported Python versions:  3.10, 3.11, 3.12.  Others may work.) 
 
-1. Clone the repository
+1. Clone this repository
 
-       git clone https://github.com/pairx-explains/pairx.git
+       git clone https://github.com/WildMeOrg/pairx.git
        cd pairx
-2. Set up the conda environment
-
-       conda env create -f environment.yml
-       conda activate pairx
+2. Create a virtual environment and install pairx
+        
+       python -m venv .venv
+       # or with uv, whichever is your preference ... 
+       source .venv/bin/activate
+       pip install -e .
 3. Run the example
 
-       python demo.py
-4. View the PAIR-X output in the `examples` directory.
+       cd examples 
+       python miewid_demo.py
+4. View the PAIR-X output in the `output` directory.
 
 ## Quickstart: Running on new datasets and models
 
@@ -23,12 +44,10 @@ Demo code for Pairwise mAtching of Intermediate Representations for eXplainabili
 Clone the repository as described above. Then include the needed imports:
 
        import torch
-       import os
-       from PIL import Image
-       
-       from xai_dataset import XAIDataset, get_img_pair_from_paths
-       from example_loaders import toy_df, wildme_multispecies_miewid
-       from core import explain
+
+       from pairx import explain
+       from pairx.dataset import get_img_pair_from_paths
+       from pairx.loaders import wildme_multispecies_miewid
 
        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -47,9 +66,13 @@ Otherwise, you should supply each variable for your own model:
 
 If you want to run ad hoc on a pair of images, you can simply use:
 
-       img_path_0 = <PATH/TO/IMG_0>
-       img_path_1 = <PATH/TO/IMG_1>
-       img_0, img_1, img_np_0, img_np_1 = get_img_pair_from_paths(device, img_path_0, img_path_1, img_size, img_transforms)
+       img_paths = ["examples/data/cow_0_0.jpg", "examples/data/cow_0_1.jpg"]
+       img_0, img_1, img_np_0, img_np_1 = get_img_pair_from_paths(device,
+                                                                  f"{img_paths[0]}",
+                                                                  f"{img_paths[1]}",
+                                                                  img_size,
+                                                                  img_transforms
+                                                                  )
 
 This loads the images with and without transforms applied, so that the untransformed images can be used for visualizations.
 
