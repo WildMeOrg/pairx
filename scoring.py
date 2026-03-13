@@ -79,12 +79,13 @@ def pairx_rerank_score(device, img_0, img_1, model, layer_key,
         )
 
         # Feature matching via BFMatcher cross-check
-        # Squeeze batch dimension: [1, C, H, W] -> [C, H, W]
+        # Remove batch dimension: [1, C, H, W] -> [C, H, W]
         # core.py's flatten_to_descriptors expects [C, H, W] not [1, C, H, W]
-        fm_0 = feature_maps_0[layer_key].squeeze(0)
-        fm_1 = feature_maps_1[layer_key].squeeze(0)
-        ir_0 = np.squeeze(intermediate_relevances_0[layer_key], axis=0)
-        ir_1 = np.squeeze(intermediate_relevances_1[layer_key], axis=0)
+        # Use [0] indexing instead of squeeze() to fail loudly on unexpected shapes
+        fm_0 = feature_maps_0[layer_key][0]
+        fm_1 = feature_maps_1[layer_key][0]
+        ir_0 = intermediate_relevances_0[layer_key][0]
+        ir_1 = intermediate_relevances_1[layer_key][0]
 
         matches = get_feature_matches(fm_0, fm_1, img_0, img_1)
 
